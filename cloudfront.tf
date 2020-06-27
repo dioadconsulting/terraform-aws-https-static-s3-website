@@ -8,17 +8,17 @@ resource "random_string" "origin_id" {
 }
 
 resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
-  provider = "aws.us-east-1"
+  provider = aws.us-east-1
   comment  = "Cloudfront S3 Access Identify for ${var.domain_name}"
 }
 
 
 resource "aws_cloudfront_distribution" "site" {
-  provider = "aws.us-east-1"
+  provider = aws.us-east-1
 
   origin {
-    domain_name = "${aws_s3_bucket.site.bucket_regional_domain_name}"
-    origin_id   = "${random_string.origin_id.result}"
+    domain_name = aws_s3_bucket.site.bucket_regional_domain_name
+    origin_id   = random_string.origin_id.result
 
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
@@ -101,7 +101,7 @@ resource "aws_cloudfront_distribution" "site" {
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "${random_string.origin_id.result}"
+    target_origin_id = random_string.origin_id.result
 
     forwarded_values {
       query_string = false
@@ -113,7 +113,7 @@ resource "aws_cloudfront_distribution" "site" {
 
     lambda_function_association {
       event_type   = "origin-response"
-      lambda_arn   = "${module.strict_headers.lambda_qualified_arn}"
+      lambda_arn   = module.strict_headers.lambda_qualified_arn
       include_body = false
     }
 
