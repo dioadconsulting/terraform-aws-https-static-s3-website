@@ -16,6 +16,14 @@ resource "aws_s3_bucket" "site" {
     allowed_methods = ["GET", "HEAD"]
     allowed_origins = setunion([var.domain_name], var.domain_aliases)
   }
+
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
 }
 
 data "aws_iam_policy_document" "site_policy" {
