@@ -1,7 +1,7 @@
 variable "domain_name" {}
 
 variable "domain_aliases" {
-  type = list
+  type = list(any)
 }
 
 variable "bucket_name" {

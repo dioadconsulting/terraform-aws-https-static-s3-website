@@ -46,7 +46,40 @@ data "aws_iam_policy_document" "site_policy" {
       identifiers = [aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn]
     }
   }
+
+  statement {
+    sid       = "DenyUnEncryptedObjectUploads"
+    actions   = ["s3:PutObject"]
+    effect    = "Deny"
+    resources = ["${aws_s3_bucket.site.arn}/*"]
+    condition {
+      test     = "Null"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["true"]
+    }
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+  }
+
+  statement {
+    sid       = "DenyIncorrectEncryptionHeader"
+    actions   = ["s3:PutObject"]
+    effect    = "Deny"
+    resources = ["${aws_s3_bucket.site.arn}/*"]
+    condition {
+      test     = "StringNotEquals"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["AES256"]
+    }
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+  }
 }
+
 
 resource "aws_s3_bucket_policy" "site" {
   bucket = aws_s3_bucket.site.id
