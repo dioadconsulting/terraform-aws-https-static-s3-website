@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "site" {
   bucket = var.bucket_name != "" ? var.bucket_name : var.domain_name
-  acl    = "authenticated-read"
+  acl    = "private"
 
   versioning {
     enabled = true
@@ -20,7 +20,7 @@ resource "aws_s3_bucket" "site" {
   server_side_encryption_configuration {
     rule {
       apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
+        sse_algorithm = "aws:kms"
       }
     }
   }
