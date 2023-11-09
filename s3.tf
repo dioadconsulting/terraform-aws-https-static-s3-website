@@ -24,6 +24,17 @@ resource "aws_s3_bucket" "site" {
       }
     }
   }
+
+  lifecycle_rule {
+    id      = "default"
+    enabled = true
+
+    abort_incomplete_multipart_upload_days = var.s3_abort_incomplete_multipart_upload_days
+
+    noncurrent_version_expiration {
+      days = var.s3_lifecycle_noncurrent_version_expiration
+    }
+  }
 }
 
 data "aws_iam_policy_document" "site_policy" {
