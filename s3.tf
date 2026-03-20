@@ -1,38 +1,58 @@
 resource "aws_s3_bucket" "site" {
-  bucket = var.bucket_name != "" ? var.bucket_name : var.domain_name
-  acl    = "private"
+  bucket = coalesce(var.bucket_name, var.domain_name)
+}
 
-  versioning {
-    enabled = true
-  }
+resource "aws_s3_bucket_ownership_controls" "site" {
+  bucket = aws_s3_bucket.site.id
 
-  website {
-    index_document = "index.html"
-    #    error_document = "error.html"
+  rule {
+    object_ownership = "BucketOwnerEnforced"
   }
+}
+
+resource "aws_s3_bucket_versioning" "site" {
+  bucket = aws_s3_bucket.site.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "site" {
+  bucket = aws_s3_bucket.site.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_cors_configuration" "site" {
+  bucket = aws_s3_bucket.site.id
 
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "HEAD"]
-    allowed_origins = setunion([var.domain_name], var.domain_aliases)
+    allowed_origins = tolist(local.dns_records)
   }
+}
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "aws:kms"
-      }
+resource "aws_s3_bucket_lifecycle_configuration" "site" {
+  bucket = aws_s3_bucket.site.id
+
+  rule {
+    id     = "default"
+    status = "Enabled"
+
+    filter {}
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = var.s3_abort_incomplete_multipart_upload_days
     }
-  }
-
-  lifecycle_rule {
-    id      = "default"
-    enabled = true
-
-    abort_incomplete_multipart_upload_days = var.s3_abort_incomplete_multipart_upload_days
 
     noncurrent_version_expiration {
-      days = var.s3_lifecycle_noncurrent_version_expiration
+      noncurrent_days = var.s3_lifecycle_noncurrent_version_expiration
     }
   }
 }
@@ -43,8 +63,14 @@ data "aws_iam_policy_document" "site_policy" {
     resources = ["${aws_s3_bucket.site.arn}/*"]
 
     principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn]
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.site.arn]
     }
   }
 
@@ -53,8 +79,14 @@ data "aws_iam_policy_document" "site_policy" {
     resources = [aws_s3_bucket.site.arn]
 
     principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn]
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.site.arn]
     }
   }
 
@@ -63,14 +95,16 @@ data "aws_iam_policy_document" "site_policy" {
     actions   = ["s3:PutObject"]
     effect    = "Deny"
     resources = ["${aws_s3_bucket.site.arn}/*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
     condition {
       test     = "Null"
       variable = "s3:x-amz-server-side-encryption"
       values   = ["true"]
-    }
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
     }
   }
 
@@ -79,14 +113,16 @@ data "aws_iam_policy_document" "site_policy" {
     actions   = ["s3:PutObject"]
     effect    = "Deny"
     resources = ["${aws_s3_bucket.site.arn}/*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
     condition {
       test     = "StringNotEquals"
       variable = "s3:x-amz-server-side-encryption"
       values   = ["AES256"]
-    }
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
     }
   }
 }

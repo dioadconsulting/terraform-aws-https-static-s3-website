@@ -1,6 +1,6 @@
 
 
-resource "aws_route53_record" "record" {
+resource "aws_route53_record" "record_a" {
   zone_id = var.hosted_zone_id
   name    = var.domain_name
   type    = "A"
@@ -12,9 +12,23 @@ resource "aws_route53_record" "record" {
   }
 }
 
-resource "aws_route53_record" "aliases" {
+resource "aws_route53_record" "record_aaaa" {
   zone_id = var.hosted_zone_id
-  name    = var.domain_aliases[count.index]
+  name    = var.domain_name
+  type    = "AAAA"
+
+  alias {
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "aliases_a" {
+  for_each = toset(var.domain_aliases)
+
+  zone_id = var.hosted_zone_id
+  name    = each.value
   type    = "A"
 
   alias {
@@ -22,6 +36,18 @@ resource "aws_route53_record" "aliases" {
     zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
     evaluate_target_health = false
   }
+}
 
-  count = length(var.domain_aliases)
+resource "aws_route53_record" "aliases_aaaa" {
+  for_each = toset(var.domain_aliases)
+
+  zone_id = var.hosted_zone_id
+  name    = each.value
+  type    = "AAAA"
+
+  alias {
+    name                   = aws_cloudfront_distribution.site.domain_name
+    zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
+    evaluate_target_health = false
+  }
 }
