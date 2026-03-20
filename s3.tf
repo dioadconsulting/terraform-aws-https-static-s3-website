@@ -1,5 +1,7 @@
 resource "aws_s3_bucket" "site" {
   bucket = coalesce(var.bucket_name, var.domain_name)
+
+  tags = var.tags
 }
 
 resource "aws_s3_bucket_ownership_controls" "site" {

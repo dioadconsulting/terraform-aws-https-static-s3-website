@@ -39,6 +39,25 @@ resource "aws_cloudfront_response_headers_policy" "security_headers" {
       referrer_policy = "strict-origin-when-cross-origin"
       override        = true
     }
+
+    dynamic "content_security_policy" {
+      for_each = var.content_security_policy != null ? [var.content_security_policy] : []
+      content {
+        content_security_policy = content_security_policy.value
+        override                = true
+      }
+    }
+  }
+
+  dynamic "custom_headers_config" {
+    for_each = var.permissions_policy != null ? [var.permissions_policy] : []
+    content {
+      items {
+        header   = "Permissions-Policy"
+        override = true
+        value    = custom_headers_config.value
+      }
+    }
   }
 }
 
@@ -53,75 +72,18 @@ resource "aws_cloudfront_distribution" "site" {
 
   enabled             = true
   is_ipv6_enabled     = true
-  default_root_object = "index.html"
+  default_root_object = var.default_root_object
 
   aliases = tolist(local.dns_records)
 
-  custom_error_response {
-    error_code            = 400
-    response_code         = 400
-    response_page_path    = "/error/400.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 403
-    response_code         = 403
-    response_page_path    = "/error/403.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 404
-    response_code         = 404
-    response_page_path    = "/error/404.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 405
-    response_code         = 405
-    response_page_path    = "/error/405.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 414
-    response_code         = 414
-    response_page_path    = "/error/414.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 416
-    response_code         = 416
-    response_page_path    = "/error/416.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 500
-    response_code         = 500
-    response_page_path    = "/error/500.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 501
-    response_code         = 501
-    response_page_path    = "/error/501.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 502
-    response_code         = 502
-    response_page_path    = "/error/502.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 503
-    response_code         = 503
-    response_page_path    = "/error/503.html"
-    error_caching_min_ttl = 1800
-  }
-  custom_error_response {
-    error_code            = 504
-    response_code         = 504
-    response_page_path    = "/error/504.html"
-    error_caching_min_ttl = 1800
+  dynamic "custom_error_response" {
+    for_each = local.effective_error_responses
+    content {
+      error_code            = custom_error_response.value.error_code
+      response_code         = custom_error_response.value.response_code
+      response_page_path    = custom_error_response.value.response_page_path
+      error_caching_min_ttl = custom_error_response.value.error_caching_min_ttl
+    }
   }
 
   default_cache_behavior {
@@ -136,7 +98,7 @@ resource "aws_cloudfront_distribution" "site" {
     viewer_protocol_policy = "redirect-to-https"
   }
 
-  price_class = "PriceClass_100"
+  price_class = var.cloudfront_price_class
 
   restrictions {
     geo_restriction {
@@ -149,5 +111,7 @@ resource "aws_cloudfront_distribution" "site" {
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
+
+  tags = var.tags
 }
 
