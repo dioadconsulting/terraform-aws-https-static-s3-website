@@ -1,6 +1,6 @@
 
 
-resource "aws_route53_record" "caa" {
+resource "aws_route53_record" "caa_aws" {
   zone_id = var.hosted_zone_id
   name    = var.domain_name
   type    = "CAA"
@@ -8,6 +8,17 @@ resource "aws_route53_record" "caa" {
 
   records = [
     "0 issue \"amazon.com\"",
+  ]
+}
+
+resource "aws_route53_record" "caa_letsencrypt" {
+  zone_id = var.hosted_zone_id
+  name    = var.domain_name
+  type    = "CAA"
+  ttl     = 300
+
+  records = [
+    "0 issue \"letsencrypt.org\"",
   ]
 }
 
