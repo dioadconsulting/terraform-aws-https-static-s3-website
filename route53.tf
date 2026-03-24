@@ -1,27 +1,15 @@
 
 
-resource "aws_route53_record" "caa_aws" {
+resource "aws_route53_record" "caa" {
   zone_id = var.hosted_zone_id
   name    = var.domain_name
   type    = "CAA"
   ttl     = 300
 
-  records = [
-    "0 issue \"amazon.com\"",
-  ]
-}
-
-resource "aws_route53_record" "caa_letsencrypt" {
-  count = var.create_caa_letsencrypt_record ? 1 : 0
-
-  zone_id = var.hosted_zone_id
-  name    = var.domain_name
-  type    = "CAA"
-  ttl     = 300
-
-  records = [
-    "0 issue \"letsencrypt.org\"",
-  ]
+  records = concat(
+    ["0 issue \"amazon.com\""],
+    var.create_caa_letsencrypt_record ? ["0 issue \"letsencrypt.org\""] : []
+  )
 }
 
 resource "aws_route53_record" "record_a" {
