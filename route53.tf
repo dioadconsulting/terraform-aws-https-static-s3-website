@@ -1,5 +1,16 @@
 
 
+resource "aws_route53_record" "caa" {
+  zone_id = var.hosted_zone_id
+  name    = var.domain_name
+  type    = "CAA"
+  ttl     = 300
+
+  records = [
+    "0 issue \"amazon.com\"",
+  ]
+}
+
 resource "aws_route53_record" "record_a" {
   zone_id = var.hosted_zone_id
   name    = var.domain_name
