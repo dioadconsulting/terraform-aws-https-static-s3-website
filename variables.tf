@@ -72,6 +72,12 @@ variable "permissions_policy" {
   default     = "camera=(), geolocation=(), microphone=(), payment=()"
 }
 
+variable "create_caa_letsencrypt_record" {
+  type        = bool
+  description = "When true, creates a CAA record permitting Let's Encrypt to issue certificates for the domain."
+  default     = false
+}
+
 variable "tags" {
   type        = map(string)
   description = "Map of tags applied to all taggable resources."

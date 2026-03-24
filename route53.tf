@@ -12,6 +12,8 @@ resource "aws_route53_record" "caa_aws" {
 }
 
 resource "aws_route53_record" "caa_letsencrypt" {
+  count = var.create_caa_letsencrypt_record ? 1 : 0
+
   zone_id = var.hosted_zone_id
   name    = var.domain_name
   type    = "CAA"
